@@ -35,8 +35,6 @@
     desktop-file-utils
     blueprint-compiler
     adwaita-icon-theme
-    opencode
-    bubblewrap
   ];
 
   # https://devenv.sh/scripts/
