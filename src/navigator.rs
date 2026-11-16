@@ -7,11 +7,109 @@ use anyhow::{Context, Result};
 
 use crate::errors::AppError;
 
-const IMAGE_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico", "svg", "avif", "heic",
-    "heif", "jxl",
+pub struct Format {
+    pub extensions: &'static [&'static str],
+    pub mime_types: &'static [&'static str],
+    pub kind: MediaKind,
+}
+
+pub const FORMATS: &[Format] = &[
+    Format {
+        extensions: &["jpg", "jpeg"],
+        mime_types: &["image/jpeg"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["png"],
+        mime_types: &["image/png"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["webp"],
+        mime_types: &["image/webp"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["gif"],
+        mime_types: &["image/gif"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["bmp"],
+        mime_types: &["image/bmp"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["tif", "tiff"],
+        mime_types: &["image/tiff"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["ico"],
+        mime_types: &["image/vnd.microsoft.icon", "image/x-icon"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["svg"],
+        mime_types: &["image/svg+xml"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["avif"],
+        mime_types: &["image/avif"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["heic", "heif"],
+        mime_types: &["image/heic", "image/heif"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["jxl"],
+        mime_types: &["image/jxl"],
+        kind: MediaKind::Image,
+    },
+    Format {
+        extensions: &["mp4"],
+        mime_types: &["video/mp4"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["m4v"],
+        mime_types: &["video/x-m4v"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["mkv"],
+        mime_types: &["video/x-matroska"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["webm"],
+        mime_types: &["video/webm"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["mov"],
+        mime_types: &["video/quicktime"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["avi"],
+        mime_types: &["video/x-msvideo"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["ogv"],
+        mime_types: &["video/ogg"],
+        kind: MediaKind::Video,
+    },
+    Format {
+        extensions: &["3gp"],
+        mime_types: &["video/3gpp"],
+        kind: MediaKind::Video,
+    },
 ];
-const VIDEO_EXTENSIONS: &[&str] = &["mp4", "m4v", "mkv", "webm", "mov", "avi", "ogv"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MediaKind {
@@ -26,13 +124,24 @@ fn normalize_extension(ext: &str) -> String {
 fn is_media(ext: &str) -> Option<MediaKind> {
     let ext = normalize_extension(ext);
 
-    if IMAGE_EXTENSIONS.contains(&ext.as_str()) {
-        Some(MediaKind::Image)
-    } else if VIDEO_EXTENSIONS.contains(&ext.as_str()) {
-        Some(MediaKind::Video)
-    } else {
-        None
+    FORMATS
+        .iter()
+        .find(|format| format.extensions.contains(&ext.as_str()))
+        .map(|format| format.kind)
+}
+
+pub fn supported_mime_types() -> Vec<&'static str> {
+    let mut mime_types = Vec::new();
+
+    for format in FORMATS {
+        for mime_type in format.mime_types {
+            if !mime_types.contains(mime_type) {
+                mime_types.push(*mime_type);
+            }
+        }
     }
+
+    mime_types
 }
 
 pub fn media_kind(path: &Path) -> Option<MediaKind> {
@@ -293,6 +402,57 @@ mod tests {
         assert_eq!(media_kind(Path::new("a.MP4")), Some(MediaKind::Video));
         assert_eq!(media_kind(Path::new("a.mkv")), Some(MediaKind::Video));
         assert_eq!(media_kind(Path::new("a.txt")), None);
+    }
+
+    #[test]
+    fn desktop_mime_types_match_formats() {
+        use std::collections::BTreeSet;
+
+        let desktop = include_str!("../data/io.github.oscar370.Reel.desktop.in");
+        let desktop_mime_types = desktop
+            .lines()
+            .find_map(|line| line.strip_prefix("MimeType="))
+            .expect("desktop file should contain a MimeType= line")
+            .split(';')
+            .filter(|mime_type| !mime_type.is_empty())
+            .map(str::to_owned)
+            .collect::<BTreeSet<_>>();
+
+        let format_mime_types = supported_mime_types()
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<BTreeSet<_>>();
+
+        let missing_from_formats = desktop_mime_types
+            .difference(&format_mime_types)
+            .cloned()
+            .collect::<Vec<_>>();
+        let missing_from_desktop = format_mime_types
+            .difference(&desktop_mime_types)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        assert!(
+            missing_from_formats.is_empty() && missing_from_desktop.is_empty(),
+            "MIME types missing from FORMATS: {missing_from_formats:?}; \
+             MIME types missing from the desktop file: {missing_from_desktop:?}"
+        );
+    }
+
+    #[test]
+    fn formats_have_no_duplicate_extensions() {
+        use std::collections::BTreeSet;
+
+        let mut seen = BTreeSet::new();
+
+        for format in FORMATS {
+            for extension in format.extensions {
+                assert!(
+                    seen.insert(*extension),
+                    "duplicate extension in FORMATS: {extension}"
+                );
+            }
+        }
     }
 
     #[test]

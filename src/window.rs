@@ -8,7 +8,7 @@ use gettextrs::gettext;
 use gtk::{gio, glib};
 
 use crate::errors::{generic_user_message, AppError};
-use crate::navigator::{media_kind, FolderNavigator, MediaKind};
+use crate::navigator::{media_kind, supported_mime_types, FolderNavigator, MediaKind};
 
 const CONTROLS_HIDE_DELAY: Duration = Duration::from_secs(2);
 
@@ -125,26 +125,10 @@ impl ReelWindow {
         let filter = gtk::FileFilter::new();
         let filter_name = gettext("Supported Media");
         filter.set_name(Some(&filter_name));
-        filter.add_mime_type("image/jpeg");
-        filter.add_mime_type("image/png");
-        filter.add_mime_type("image/webp");
-        filter.add_mime_type("image/avif");
-        filter.add_mime_type("image/heic");
-        filter.add_mime_type("image/heif");
-        filter.add_mime_type("image/jxl");
-        filter.add_mime_type("image/gif");
-        filter.add_mime_type("image/bmp");
-        filter.add_mime_type("image/tiff");
-        filter.add_mime_type("image/svg+xml");
-        filter.add_mime_type("image/x-icon");
-        filter.add_mime_type("image/vnd.microsoft.icon");
-        filter.add_mime_type("video/mp4");
-        filter.add_mime_type("video/x-matroska");
-        filter.add_mime_type("video/webm");
-        filter.add_mime_type("video/quicktime");
-        filter.add_mime_type("video/x-msvideo");
-        filter.add_mime_type("video/ogg");
-        filter.add_mime_type("video/x-m4v");
+
+        for mime_type in supported_mime_types() {
+            filter.add_mime_type(mime_type);
+        }
 
         let filters = gio::ListStore::new::<gtk::FileFilter>();
         filters.append(&filter);
