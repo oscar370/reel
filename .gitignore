@@ -1,0 +1,9 @@
+.devenv
+.direnv
+
+result
+
+.vscode/settings.json
+
+target
+build

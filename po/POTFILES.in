@@ -1,0 +1,9 @@
+# List of source files containing translatable strings.
+# Please keep this file sorted alphabetically.
+data/io.github.oscar370.Reel.desktop.in
+data/io.github.oscar370.Reel.metainfo.xml.in
+data/io.github.oscar370.Reel.gschema.xml
+src/application.rs
+src/errors.rs
+src/window.blp
+src/window.rs

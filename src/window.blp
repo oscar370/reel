@@ -1,0 +1,158 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ReelWindow: Adw.ApplicationWindow {
+  title: _("Reel");
+  default-width: 800;
+  default-height: 600;
+
+  content: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Button header_open_button {
+        icon-name: "document-open-symbolic";
+        tooltip-text: _("Open File…");
+      }
+
+      title-widget: Adw.WindowTitle file_title {
+        title: _("Reel");
+      };
+
+      [end]
+      MenuButton {
+        primary: true;
+        icon-name: "open-menu-symbolic";
+        tooltip-text: _("Main Menu");
+        menu-model: primary_menu;
+      }
+    }
+
+    content: Adw.ToastOverlay toast_overlay {
+      child: Overlay media_overlay {
+        Adw.ViewStack view_stack {
+          hexpand: true;
+          vexpand: true;
+
+          Adw.ViewStackPage {
+            name: "empty";
+            title: _("Empty");
+            icon-name: "folder-open-symbolic";
+
+            child: Adw.StatusPage empty_view {
+              icon-name: "folder-open-symbolic";
+              title: _("No Media Open");
+              description: _("Open an image or video to start.");
+
+              child: Button open_button {
+                label: _("Open File…");
+                halign: center;
+
+                styles [
+                  "pill",
+                  "suggested-action",
+                ]
+              };
+            };
+          }
+
+          Adw.ViewStackPage {
+            name: "image";
+            title: _("Image");
+            icon-name: "image-x-generic-symbolic";
+
+            child: Picture image_view {
+              content-fit: contain;
+              hexpand: true;
+              vexpand: true;
+            };
+          }
+
+          Adw.ViewStackPage {
+            name: "video";
+            title: _("Video");
+            icon-name: "video-x-generic-symbolic";
+
+            child: Video video_view {
+              autoplay: false;
+              hexpand: true;
+              vexpand: true;
+            };
+          }
+
+          Adw.ViewStackPage {
+            name: "error";
+            title: _("Error");
+            icon-name: "dialog-error-symbolic";
+
+            child: Adw.StatusPage error_view {
+              icon-name: "dialog-error-symbolic";
+              title: _("Could Not Open File");
+              description: _("The file could not be loaded. It may be unsupported or damaged.");
+
+              child: Label error_label {
+                wrap: true;
+                justify: center;
+
+                styles [
+                  "dim-label",
+                ]
+              };
+            };
+          }
+        }
+
+        [overlay]
+        Revealer prev_revealer {
+          halign: start;
+          valign: center;
+          margin-start: 12;
+          transition-type: slide_right;
+          transition-duration: 200;
+          reveal-child: false;
+
+          child: Button prev_button {
+            icon-name: "go-previous-symbolic";
+            tooltip-text: _("Previous");
+            valign: center;
+
+            styles [
+              "circular",
+              "osd",
+            ]
+          };
+        }
+
+        [overlay]
+        Revealer next_revealer {
+          halign: end;
+          valign: center;
+          margin-end: 12;
+          transition-type: slide_left;
+          transition-duration: 200;
+          reveal-child: false;
+
+          child: Button next_button {
+            icon-name: "go-next-symbolic";
+            tooltip-text: _("Next");
+            valign: center;
+
+            styles [
+              "circular",
+              "osd",
+            ]
+          };
+        }
+      };
+    };
+  };
+}
+
+menu primary_menu {
+  section {
+    item {
+      label: _("_About Reel");
+      action: "app.about";
+    }
+  }
+}
